@@ -1,5 +1,5 @@
 
-# Run the generate_eval.py that takes the generate_modified from  trainer. This takes care of the probabilities being returned from the llm-cxr model. I have updated the files so that the output data frame has the generated text and the corresponding probabilities.
+# Run the generate_eval.py with the appropriate arguments as defined in the file. This particularly that takes the functions from the generate_modified from trainer. This takes care of the probabilities being returned from the llm-cxr model. I have updated the files so that the output data frame has the generated text and the corresponding probabilities.
 
 
 # LLM-CXR: Instruction-Finetuned LLM for CXR Image Understanding and Generation
