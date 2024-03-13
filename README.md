@@ -1,3 +1,7 @@
+
+# Run the generate_eval.py that takes the generate_modified from  trainer. This takes care of the probabilities being returned from the llm-cxr model. I have updated the files so that the output data frame has the generated text and the corresponding probabilities.
+
+
 # LLM-CXR: Instruction-Finetuned LLM for CXR Image Understanding and Generation
 
 This repository is the official implementation of the paper [LLM-CXR: Instruction-Finetuned LLM for CXR Image Understanding and Generation (arxiv)](https://arxiv.org/abs/2305.11490).
