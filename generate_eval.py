@@ -11,7 +11,7 @@ parser.add_argument('cxr_vq_path', type=Path,
                     help='Path to Vector Quantized CXR dataset pickle.')
 parser.add_argument('output_root', type=Path,
                     help='Path to save result.')
-parser.add_argument('--mimic_cxr_jpg_path', type=Path, default="data/mimic-cxr-jpg",
+parser.add_argument('--mimic_cxr_jpg_path', type=Path, default="/lustre/fs1/groups/sernam/datasets/physionet.org/files/data/mimic-cxr-jpg/",
                     help='Path to MIMIC-CXR-JPG dataset.')
 parser.add_argument('--eval_dicom_ids_path', type=Path, default="data/eval_dicom_ids.pickle",
                     help='path to eval dicom ids pickle.')
@@ -84,9 +84,9 @@ def parse_report_i(txt: str) -> str:
     return impression.strip()
 
 
-if __name__ == "__main__":
+if _name_ == "_main_":
 
-    RESULT_PATH = args.output_root / Path(f"llm-cxr__eval_results_{I_PARALLEL}_{N_PARALLEL}.pickle")
+    RESULT_PATH = args.output_root / Path(f"llm-cxr_eval_results{I_PARALLEL}_{N_PARALLEL}.pickle")
     PARSE_FUNCTION = parse_report_i
 
     print(f"Result will be saved to {RESULT_PATH}.")
@@ -115,10 +115,10 @@ if __name__ == "__main__":
             continue
 
         try:
-            raw_report = load_report(db, args.mimic_cxr_jpg_path, dicom_id, PARSE_FUNCTION)
+           # raw_report = load_report(db, args.mimic_cxr_jpg_path, dicom_id, PARSE_FUNCTION)
             raw_image = [vq_elem + CXR_VQ_TOKENIZER_LEN for vq_elem in db_vq[dicom_id]]
             dataset.append({"dicom_id": dicom_id, "subject_id": subject_id, 
-                            "raw_report": raw_report, "raw_image": raw_image, 
+                            "raw_image": raw_image, 
                             "gen_report": None, "gen_image": None})
         except:
             pass
@@ -152,6 +152,6 @@ if __name__ == "__main__":
         data["gen_report"] = response
         data["token_probs"] = probabilities
         
-    args.output_root.mkdir(parents=True, exist_ok=False)
+    args.output_root.mkdir(parents=True, exist_ok=True)
     with open(RESULT_PATH, "wb") as f:
         pickle.dump(dataset, f)
