@@ -198,10 +198,10 @@ class InstructionTextGenerationPipeline(Pipeline):
         generated_sequence = model_outputs["generated_sequence"][0]
         generated_vq = model_outputs["generated_vq"]
         instruction_text = model_outputs["instruction_text"]
-
+        token_probabilities = model_outputs.get('probabilities', [])
         generated_sequence: List[List[int]] = generated_sequence.numpy().tolist()
         records = []
-        for sequence in generated_sequence:
+        for sequence, probs in zip(generated_sequence, token_probabilities):
 
             # The response will be set to this variable if we can identify it.
             decoded = None
@@ -254,7 +254,7 @@ class InstructionTextGenerationPipeline(Pipeline):
             if return_full_text:
                 decoded = f"{instruction_text}\n{decoded}"
 
-            rec = {"generated_text": decoded, "generated_vq": generated_vq}
+            rec = {"generated_text": decoded, "generated_vq": generated_vq, "probabilities": probs}
 
             records.append(rec)
 
