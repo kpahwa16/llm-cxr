@@ -147,36 +147,51 @@ class InstructionTextGenerationPipeline(Pipeline):
     def _forward(self, model_inputs, **generate_kwargs):
         input_ids = model_inputs["input_ids"]
         attention_mask = model_inputs.get("attention_mask", None)
-
+    
         if input_ids.shape[1] == 0:
             input_ids = None
             attention_mask = None
             in_b = 1
         else:
             in_b = input_ids.shape[0]
-
+    
         outputs = self.model.generate(
-        input_ids=input_ids.to(self.model.device),
-        attention_mask=attention_mask.to(self.model.device) if attention_mask is not None else None,
-        output_scores=True,  # Request scores to compute probabilities
-        return_dict_in_generate=True,  # Ensure outputs are returned in a dict
-        **generate_kwargs,
-    )
-        
+            input_ids=input_ids.to(self.model.device),
+            attention_mask=attention_mask.to(self.model.device) if attention_mask is not None else None,
+            output_scores=True,  # Request scores to compute probabilities
+            return_dict_in_generate=True,  # Ensure outputs are returned in a dict
+            **generate_kwargs,
+        )
+    
+        # Calculate probabilities from scores
         probabilities = [softmax(scores, dim=-1) for scores in outputs.scores]
         
         generated_sequence = outputs.sequences
-
+    
         out_b = generated_sequence.shape[0]
         if self.framework == "pt":
             generated_sequence = generated_sequence.reshape(in_b, out_b // in_b, *generated_sequence.shape[1:])
         elif self.framework == "tf":
             generated_sequence = tf.reshape(generated_sequence, (in_b, out_b // in_b, *generated_sequence.shape[1:]))
-        
+    
+        # Extract vq if necessary, adjust based on your needs
         vq = get_extract_vq_fun(self.tokenizer)(generated_sequence)
-
+    
         instruction_text = model_inputs.pop("instruction_text")
-        return {"generated_sequence": generated_sequence, "generated_vq": vq, "input_ids": input_ids, "instruction_text": instruction_text}
+        
+     
+        token_probabilities = []
+        for scores in probabilities:
+            probs = scores.max(dim=-1).values  # Get the max probability for each step/token
+            token_probabilities.append(probs.tolist())
+    
+        return {
+            "generated_sequence": generated_sequence,
+            "generated_vq": vq,
+            "input_ids": input_ids,
+            "instruction_text": instruction_text,
+            "probabilities": token_probabilities  # Include token probabilities here
+            }
 
     def postprocess(self, model_outputs, response_key_token_id, end_key_token_id, return_full_text: bool = False):
 
