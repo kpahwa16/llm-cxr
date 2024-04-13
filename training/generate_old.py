@@ -220,36 +220,6 @@ class InstructionTextGenerationPipeline(Pipeline):
     
         instruction_text = model_inputs.pop("instruction_text")
         
-     
-        # token_probabilities = []
-        # for batch_index in range(len(probabilities)):
-        #         token_probs = []
-        #         for token_index, scores in enumerate(probabilities[batch_index]):
-        #             # Retrieve the generated token ID at the current position
-        #             token_id = outputs.sequences[batch_index, token_index + 1]  # +1 to skip the initial token
-        #             # Extract the probability of this token ID
-        #             token_prob = scores[:, token_id].item()  # Assuming batch size of 1 for simplicity
-        #             token_probs.append(token_prob)
-        #         token_probabilities.append(token_probs)
-        # for batch_index in range(outputs.sequences.shape[0]):
-        #     batch_probabilities = []
-        #     # Start at 1 to skip the initial token
-        #     for token_index in range(1, outputs.sequences.shape[1]):
-        #         token_id = outputs.sequences[batch_index, token_index].item()
-        #         scores = probabilities[token_index - 1]  # Adjusted to get the correct step's scores
-        #         print("scores:")
-        #         print(scores)
-        #         token_prob = scores[token_id].item()  # Adjust indexing to directly access the score
-        #         print(token_prob)
-        #         batch_probabilities.append(token_prob)
-        #     token_probabilities.append(batch_probabilities)
-        # for scores in probabilities:
-        #     probs = scores.max(dim=-1).values  # Get the max probability for each step/token
-        #     token_probabilities.append(probs.tolist())
-        print("word_probabilities")
-        print(word_probabilities)
-        print("words")
-        print(words)
         return {
             "generated_sequence": generated_sequence,
             "words": words,
@@ -257,76 +227,6 @@ class InstructionTextGenerationPipeline(Pipeline):
             "input_ids": input_ids,
             "instruction_text": instruction_text # Include token probabilities here
             }
-
-    # def postprocess(self, model_outputs, response_key_token_id, end_key_token_id, return_full_text: bool = False):
-    #     words = model_outputs["words"]
-    #     word_probabilities = model_outputs["word_probabilities"]
-    #     generated_text = " ".join(words)
-    #     generated_sequence = model_outputs["generated_sequence"][0]
-    #     # generated_vq = model_outputs["generated_vq"]
-    #     instruction_text = model_outputs["instruction_text"]
-    #     token_probabilities = model_outputs.get('probabilities', [])
-    #     generated_sequence: List[List[int]] = generated_sequence.numpy().tolist()
-    #     records = []
-    #     for sequence, probs in zip(generated_sequence, token_probabilities):
-
-    #         # The response will be set to this variable if we can identify it.
-    #         decoded = None
-    #         # If we have token IDs for the response and end, then we can find the tokens and only decode between them.
-    #         if response_key_token_id and end_key_token_id:
-    #             # Find where "### Response:" is first found in the generated tokens.  Considering this is part of the
-    #             # prompt, we should definitely find it.  We will return the tokens found after this token.
-    #             try:
-    #                 response_pos = sequence.index(response_key_token_id)
-    #             except ValueError:
-    #                 logger.warn(f"Could not find response key {response_key_token_id} in: {sequence}")
-    #                 response_pos = None
-
-    #             if response_pos:
-    #                 # Next find where "### End" is located.  The model has been trained to end its responses with this
-    #                 # sequence (or actually, the token ID it maps to, since it is a special token).  We may not find
-    #                 # this token, as the response could be truncated.  If we don't find it then just return everything
-    #                 # to the end.  Note that even though we set eos_token_id, we still see the this token at the end.
-    #                 try:
-    #                     end_pos = sequence.index(end_key_token_id)
-    #                 except ValueError:
-    #                     end_pos = None
-
-    #                 decoded = self.tokenizer.decode(sequence[response_pos + 1 : end_pos]).strip()
-
-    #         if not decoded:
-    #             # Otherwise we'll decode everything and use a regex to find the response and end.
-
-    #             fully_decoded = self.tokenizer.decode(sequence)
-
-    #             # The response appears after "### Response:".  The model has been trained to append "### End" at the
-    #             # end.
-    #             m = re.search(r"#+\s*Response:\s*(.+?)#+\s*End", fully_decoded, flags=re.DOTALL)
-
-    #             if m:
-    #                 decoded = m.group(1).strip()
-    #             else:
-    #                 # The model might not generate the "### End" sequence before reaching the max tokens.  In this case,
-    #                 # return everything after "### Response:".
-    #                 m = re.search(r"#+\s*Response:\s*(.+)", fully_decoded, flags=re.DOTALL)
-    #                 if m:
-    #                     decoded = m.group(1).strip()
-    #                 else:
-    #                     logger.warn(f"Failed to find response in:\n{fully_decoded}")
-
-    #         # If the full text is requested, then append the decoded text to the original instruction.
-    #         # This technically isn't the full text, as we format the instruction in the prompt the model has been
-    #         # trained on, but to the client it will appear to be the full text.
-    #         if return_full_text:
-    #             decoded = f"{instruction_text}\n{decoded}"
-
-    #         rec = {"generated_text": decoded,"words": words, "word_probabilities": word_probabilities}
-
-    #         records.append(rec)
-
-    #     print("Postprocess output:", records)  # Check the output structure
-
-    #     return records
 
     def postprocess(self, model_outputs, response_key_token_id, end_key_token_id, return_full_text: bool = False):
 
