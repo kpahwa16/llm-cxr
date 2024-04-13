@@ -5,11 +5,11 @@ from pathlib import Path
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('model_path', type=Path,
+parser.add_argument('--model_path', type=Path,
                     help='Path to LLM-CXR model checkpoint.')
-parser.add_argument('cxr_vq_path', type=Path,
+parser.add_argument('--cxr_vq_path', type=Path,
                     help='Path to Vector Quantized CXR dataset pickle.')
-parser.add_argument('output_root', type=Path,
+parser.add_argument('--output_root', type=Path,
                     help='Path to save result.')
 parser.add_argument('--mimic_cxr_jpg_path', type=Path, default="/lustre/fs1/groups/sernam/datasets/physionet.org/files/data/mimic-cxr-jpg/",
                     help='Path to MIMIC-CXR-JPG dataset.')
@@ -21,6 +21,7 @@ parser.add_argument('--rank', type=int, default=0,
                     help='Rank of current process.')
 args = parser.parse_args()
 
+#nohup python generate_eval.py --model_path /home/cteja/llm-cxr2/ckpts/llmcxr_mimic-cxr-256-txvloss-medvqa-stage1_2 --cxr_vq_path /home/cteja/llm-cxr/data/mimic-cxr-256-txvloss_codebook_indices.pickle --output_root /home/cteja/llm-cxr/eval_new --mimic_cxr_jpg_path /lustre/fs1/groups/sernam/datasets/physionet.org/files/data/mimic-cxr-jpg/ --eval_dicom_ids_path /home/cteja/llm-cxr/data/eval_dicom_ids.pickle
 N_PARALLEL = args.word_size
 I_PARALLEL = args.rank
 
@@ -34,7 +35,7 @@ import pickle
 
 from tqdm import tqdm
 
-from training.generate_modified import generate_response, load_model_tokenizer_for_generate
+from training.generate_old import generate_response, load_model_tokenizer_for_generate
 from training.mimiccxr_vq_dataset import sample_cxr_vq_output_instruction, sample_cxr_vq_input_instruction, CXR_VQ_TOKENIZER_LEN
 
 
@@ -84,9 +85,9 @@ def parse_report_i(txt: str) -> str:
     return impression.strip()
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
 
-    RESULT_PATH = args.output_root / Path(f"llm-cxr_eval_results{I_PARALLEL}_{N_PARALLEL}.pickle")
+    RESULT_PATH = args.output_root / Path(f"llm-cxr__eval_results_{I_PARALLEL}_{N_PARALLEL}.pickle")
     PARSE_FUNCTION = parse_report_i
 
     print(f"Result will be saved to {RESULT_PATH}.")
@@ -127,30 +128,42 @@ if _name_ == "_main_":
 
     model, tokenizer = load_model_tokenizer_for_generate(args.model_path)
     assert len(tokenizer) == CXR_VQ_TOKENIZER_LEN
+    print(len(dataset))
+   
+
+    print(dataset[0]["raw_image"])
+    count = 0
     for data in tqdm(dataset, colour="green"):
         instruction_text = sample_cxr_vq_input_instruction()
         input_text = data["raw_image"]
+        print("instruction_text", instruction_text)
+        print("input_text", input_text)
         # response, _ = generate_response((instruction_text, input_text), model=model, tokenizer=tokenizer, max_new_tokens=128)
-        response, generated_vq, probabilities = generate_response(
+        generated_text, words, word_probabilities = generate_response(
           (instruction_text, input_text),
           model=model,
           tokenizer=tokenizer,
           max_new_tokens=128
         )
+        print(generated_text)
+        print(words)
+        print(word_probabilities)
 
-        # instruction_text = sample_cxr_vq_output_instruction()
-        # # input_text = data["raw_report"]
-        # # response_vq = None
-        # # count = 0
-        # # while response_vq is None or len(response_vq) != 256:
-        # #     if count > 0:
-        # #         print("warning: retrying vq-gen")
+        # input_text = data["raw_report"]
+        # response_vq = None
+        # count = 0
+        # while response_vq is None or len(response_vq) != 256:
+        #     if count > 0:
+        #         print("warning: retrying vq-gen")
                 
-        # #     _, response_vq = generate_response((instruction_text, input_text), model=model, tokenizer=tokenizer, max_new_tokens=300)
-        # #     count += 1
+        #     _, response_vq = generate_response((instruction_text, input_text), model=model, tokenizer=tokenizer, max_new_tokens=300)
+        #     count += 1
         data["image_id"] = data["dicom_id"]
-        data["gen_report"] = response
-        data["token_probs"] = probabilities
+        data["gen_report"] = generated_text
+        data["words"] = words
+        data["token_probs"] = word_probabilities
+        print(data["dicom_id"])
+        
         
     args.output_root.mkdir(parents=True, exist_ok=True)
     with open(RESULT_PATH, "wb") as f:
