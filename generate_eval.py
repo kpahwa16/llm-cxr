@@ -149,15 +149,6 @@ if __name__ == "__main__":
         print(words)
         print(word_probabilities)
 
-        # input_text = data["raw_report"]
-        # response_vq = None
-        # count = 0
-        # while response_vq is None or len(response_vq) != 256:
-        #     if count > 0:
-        #         print("warning: retrying vq-gen")
-                
-        #     _, response_vq = generate_response((instruction_text, input_text), model=model, tokenizer=tokenizer, max_new_tokens=300)
-        #     count += 1
         data["image_id"] = data["dicom_id"]
         data["gen_report"] = generated_text
         data["words"] = words
