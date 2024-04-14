@@ -12,7 +12,7 @@ from transformers import (
     PreTrainedTokenizer,
 )
 
-from transformers.utils import is_tf_available
+from transformers.file_utils import is_tf_available
 
 if is_tf_available():
     import tensorflow as tf

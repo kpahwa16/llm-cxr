@@ -5,15 +5,15 @@ from pathlib import Path
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--model_path', type=Path,
+parser.add_argument('--model_path', type=Path, default="/home/jianih/research/symbolic-medical-imaging/data/llm-cxr/llmcxr_mimic-cxr-256-txvloss-medvqa-stage1_2",
                     help='Path to LLM-CXR model checkpoint.')
-parser.add_argument('--cxr_vq_path', type=Path,
+parser.add_argument('--cxr_vq_path', type=Path, default="/home/jianih/research/symbolic-medical-imaging/data/llm-cxr/mimic-cxr-256-txvloss_codebook_indices.pickle",
                     help='Path to Vector Quantized CXR dataset pickle.')
-parser.add_argument('--output_root', type=Path,
+parser.add_argument('--output_root', type=Path, default="/home/jianih/research/symbolic-medical-imaging/data/llm-cxr/output",
                     help='Path to save result.')
-parser.add_argument('--mimic_cxr_jpg_path', type=Path, default="/lustre/fs1/groups/sernam/datasets/physionet.org/files/data/mimic-cxr-jpg/",
+parser.add_argument('--mimic_cxr_jpg_path', type=Path, default="/home/jianih/research/symbolic-medical-imaging/data/llm-cxr/physionet.org/files/mimic-cxr-jpg/2.1.0",
                     help='Path to MIMIC-CXR-JPG dataset.')
-parser.add_argument('--eval_dicom_ids_path', type=Path, default="data/eval_dicom_ids.pickle",
+parser.add_argument('--eval_dicom_ids_path', type=Path, default="/home/jianih/research/symbolic-medical-imaging/data/llm-cxr/eval_dicom_ids.pickle",
                     help='path to eval dicom ids pickle.')
 parser.add_argument('--word_size', type=int, default=1,
                     help='Number of parallel processes.')
@@ -145,6 +145,7 @@ if __name__ == "__main__":
           tokenizer=tokenizer,
           max_new_tokens=128
         )
+        
         print(generated_text)
         print(words)
         print(word_probabilities)

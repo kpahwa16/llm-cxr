@@ -1,0 +1,5 @@
+setup.py
+llmcxr.egg-info/PKG-INFO
+llmcxr.egg-info/SOURCES.txt
+llmcxr.egg-info/dependency_links.txt
+llmcxr.egg-info/top_level.txt
