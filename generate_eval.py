@@ -35,8 +35,8 @@ import pickle
 
 from tqdm import tqdm
 
-from training.generate_old import generate_response, load_model_tokenizer_for_generate
-from training.mimiccxr_vq_dataset import sample_cxr_vq_output_instruction, sample_cxr_vq_input_instruction, CXR_VQ_TOKENIZER_LEN
+from llmcxr.generate_old import generate_response, load_model_tokenizer_for_generate
+from llmcxr.mimiccxr_vq_dataset import sample_cxr_vq_output_instruction, sample_cxr_vq_input_instruction, CXR_VQ_TOKENIZER_LEN
 
 
 def dicom_id_to_report_path(db, report_path, dicom_id: str):

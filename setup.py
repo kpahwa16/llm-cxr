@@ -6,5 +6,5 @@ setup(name='llmcxr',
       author='',
       author_email='',
       url='',
-      packages=[],
+      packages=["llmcxr"],
      )

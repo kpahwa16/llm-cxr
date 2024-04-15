@@ -198,12 +198,12 @@ class InstructionTextGenerationPipeline(Pipeline):
             if token.startswith(" ") or i == len(generated_tokens.squeeze()) - 1:
                 if current_word:  # Save the previous word and its average probability
                     words.append(current_word.strip())
-                    word_probabilities.append(np.mean(current_probs))
+                    word_probabilities.append(torch.mean(torch.stack(current_probs)))
                 current_word = token
-                current_probs = [probabilities[i].max().item()]
+                current_probs = [probabilities[i].max()]
             else:
                 current_word += token
-                current_probs.append(probabilities[i].max().item())
+                current_probs.append(probabilities[i].max())
 
         print(probabilities)
         # token_probabilities = []
