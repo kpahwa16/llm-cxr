@@ -17,7 +17,7 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
 )
-
+from .consts import END_KEY, PROMPT_FOR_GENERATION_FORMAT, PROMPT_FOR_GENERATION_FORMAT_NOINPUT, RESPONSE_KEY
 import os
 
 print(os.environ['PATH'])
