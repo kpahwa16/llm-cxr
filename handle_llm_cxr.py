@@ -17,8 +17,15 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
 )
-from .consts import END_KEY, PROMPT_FOR_GENERATION_FORMAT, PROMPT_FOR_GENERATION_FORMAT_NOINPUT, RESPONSE_KEY
+from llmcxr.consts import END_KEY, PROMPT_FOR_GENERATION_FORMAT, PROMPT_FOR_GENERATION_FORMAT_NOINPUT, RESPONSE_KEY
+from llmcxr.mimiccxr_vq_dataset import get_extract_vq_fun, get_inject_vq_fun, CXR_VQ_VQ_REPLACE_TEMPLATE
+
 import os
+
+import sys
+import logging
+
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
 print(os.environ['PATH'])
 # Configure transformers to reduce unnecessary log messages
@@ -27,15 +34,24 @@ print(os.environ['PATH'])
 def load_model_and_tokenizer(model_path):
     """Load a pretrained model and tokenizer based on a given path."""
     try:
-        print("inside handle script, model path:", model_path)
+        # print("inside handle script, model path:", model_path)
         tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left")
         model = AutoModelForCausalLM.from_pretrained(
             model_path, torch_dtype=torch.float32, trust_remote_code=True
         ).to('cuda' if torch.cuda.is_available() else 'cpu')
+        # print("inside handle llm cxr script")
+        # print("loaded model and tokenizer")
         return model, tokenizer
     except Exception as e:
         print(f"Error loading model or tokenizer: {e}", file=sys.stderr)
         sys.exit(1)  # Exit with error status if loading fails
+
+
+def generate_tensor(model, tokenizer, text):
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
+    outputs = model(**inputs)
+    return outputs.last_hidden_state
+
 
 
 def get_special_token_id(tokenizer: PreTrainedTokenizer, key: str) -> int:
@@ -165,17 +181,17 @@ class InstructionTextGenerationPipeline(Pipeline):
         input_length = 1 if self.model.config.is_encoder_decoder else input_ids.shape[1]
         generated_tokens = outputs.sequences[:, input_length:]
         # breakpoint()
-        print("generated_tokens", generated_tokens)
-        print("transition_scores", transition_scores)
-        print("generated_sequence", outputs.sequences)
+        # print("generated_tokens", generated_tokens)
+        # print("transition_scores", transition_scores)
+        # print("generated_sequence", outputs.sequences)
 
-        for tok, score in zip(generated_tokens[0], transition_scores[0]):
-            print(f"| {tok:5d} | {self.tokenizer.decode(tok):8s} | {score.cpu().numpy():.3f} | {np.exp(score.cpu().numpy()):.2%}")
+        #for tok, score in zip(generated_tokens[0], transition_scores[0]):
+            #print(f"| {tok:5d} | {self.tokenizer.decode(tok):8s} | {score.cpu().numpy():.3f} | {np.exp(score.cpu().numpy()):.2%}")
             # corrected above line of code
         
-        for score in outputs.scores:
-            if torch.isinf(score).any() or torch.isnan(score).any():
-                print("Warning: Inf or NaN values in scores tensor detected.")
+        # for score in outputs.scores:
+        #     if torch.isinf(score).any() or torch.isnan(score).any():
+        #         print("Warning: Inf or NaN values in scores tensor detected.")
 
     
         # Calculate probabilities from scores
@@ -202,7 +218,7 @@ class InstructionTextGenerationPipeline(Pipeline):
                 current_word += token
                 current_probs.append(probabilities[i].max().item())
 
-        print(probabilities)
+        #print(probabilities)
         # token_probabilities = []
         generated_sequence = outputs.sequences
     
@@ -289,8 +305,8 @@ class InstructionTextGenerationPipeline(Pipeline):
                     decoded = f"{instruction_text}\n{decoded}"
 
                 rec = {"generated_text": decoded, "words": words, "word_probabilities": word_probabilities}
-                print("rec_postprocess:")
-                print(rec)
+                #print("rec_postprocess:")
+                #print(rec)
                 records.append(rec)
 
             return records   
@@ -329,37 +345,32 @@ def generate_response(
     return generated_text, words, word_probabilities
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python handle_llm_cxr.py '{\"llm_model_path\": \"path/to/model\", \"instruction_text\": \"optional\", \"input_text\": \"optional\"}'", file=sys.stderr)
-        sys.exit(1)
-
     try:
         config = json.loads(sys.argv[1])
-    except json.JSONDecodeError:
-        print("Invalid JSON input.", file=sys.stderr)
-        sys.exit(1)
+        model_path = config.get('llm_model_path')
+        instruction_text = config.get('instruction_text', 'Default instruction if not provided.')
+        input_text = config.get('input_text', '')
 
-    model_path = config.get('llm_model_path')
-    if not model_path:
-        print("Model path must be specified in the JSON input.", file=sys.stderr)
-        sys.exit(1)
+        model, tokenizer = load_model_and_tokenizer(model_path)
+        generated_text, words, word_probabilities = generate_response(
+            (instruction_text, input_text),
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=128
+        )
 
-    instruction_text = config.get('instruction_text', 'Generate medical report based on the given X-ray image.')
-    input_text = config.get('input_text', '')  # Default to empty string if not specified
-    print("inside handle.py")
-    model, tokenizer = load_model_and_tokenizer(model_path)
-    print("inside handle.py")
-    generated_text, words, word_probabilities = generate_response(
-        instruction_text,
-        model=model,
-        tokenizer=tokenizer,
-        input_text=input_text,
-        max_new_tokens=128
-    )
-    print("generated_text", generated_text)
-    print("words", words)
-    print("word_probabilities", word_probabilities)
-    return generated_text, words, word_probabilities
+        # Serializing the output
+        torch.save({
+            "generated_text": generated_text,
+            "words": words,
+            "word_probabilities": word_probabilities
+        }, 'output.pt') 
+
+        print("Output saved to output.pt")  
+
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+        sys.exit(1) 
 
 if __name__ == "__main__":
     main()
